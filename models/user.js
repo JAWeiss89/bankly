@@ -78,14 +78,12 @@ class User {
    * [{username, first_name, last_name, email, phone}, ...]
    *
    * */
-
+  // FIXES BUG #5 by removing email and phone from SELECT
   static async getAll(username, password) {
     const result = await db.query(
       `SELECT username,
-                first_name,
-                last_name,
-                email,
-                phone
+              first_name,
+              last_name
             FROM users 
             ORDER BY username`
     );
@@ -111,12 +109,16 @@ class User {
     );
 
     const user = result.rows[0];
-
+    
+    // FIXES BUG #4
     if (!user) {
-      new ExpressError('No such user', 404);
+      throw new ExpressError('No such user', 404);
     }
 
     return user;
+    
+
+    
   }
 
   /** Selectively updates user from given data
@@ -128,6 +130,10 @@ class User {
    **/
 
   static async update(username, data) {
+    if (data.username || data.admin) {
+      // FIXES BUG #7
+      throw new ExpressError("You are not authorized to make these changes", 401)
+    }
     let { query, values } = sqlForPartialUpdate(
       'users',
       data,

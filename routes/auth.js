@@ -4,6 +4,7 @@ const User = require('../models/user');
 const express = require('express');
 const router = express.Router();
 const createTokenForUser = require('../helpers/createToken');
+const ExpressError = require('../helpers/expressError');
 
 
 /** Register user; return token.
@@ -37,10 +38,12 @@ router.post('/register', async function(req, res, next) {
  *
  */
 
+ // FIXED BUG #2 AND FIXED BUG #1 by adding await keyword
 router.post('/login', async function(req, res, next) {
   try {
     const { username, password } = req.body;
-    let user = User.authenticate(username, password);
+    let user = await User.authenticate(username, password);
+
     const token = createTokenForUser(username, user.admin);
     return res.json({ token });
   } catch (err) {

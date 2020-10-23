@@ -90,6 +90,28 @@ describe("POST /auth/login", function() {
     expect(username).toBe("u1");
     expect(admin).toBe(false);
   });
+  // TEST BUG #1
+  test("should NOT allow an incorrect username/password to log in", async function() {
+    const response = await request(app)
+      .post("/auth/login")
+      .send({
+        username: "u1",
+        password: "fakepassword"
+      });
+    expect(response.statusCode).not.toBe(200);
+  });
+
+  // TEST BUG #2
+  test("should NOT return token if nonexistent user tries to login", async function() {
+    const response = await request(app)
+      .post("/auth/login")
+      .send({
+        username: "idontexist",
+        password: "fakepassword"
+      });
+    expect(response.statusCode).not.toBe(200);
+  });
+  
 });
 
 describe("GET /users", function() {
@@ -104,6 +126,17 @@ describe("GET /users", function() {
       .send({ _token: tokens.u1 });
     expect(response.statusCode).toBe(200);
     expect(response.body.users.length).toBe(3);
+  });
+
+  // TEST BUG #5
+  test("should return only basic info of all users", async function() {
+    const response = await request(app)
+      .get("/users")
+      .send({ _token: tokens.u1 });
+    expect(response.statusCode).toBe(200);
+    expect(response.body.users[0].phone).toBe(undefined);
+    expect(response.body.users[0].email).toBe(undefined);
+
   });
 });
 
@@ -126,6 +159,14 @@ describe("GET /users/[username]", function() {
       phone: "phone1"
     });
   });
+
+  // TEST BUG #4
+  test("should return 404 if username doesn't exist", async function() {
+    const response = await request(app)
+      .get("/users/fakeusername")
+      .send({ _token: tokens.u1 });
+    expect(response.statusCode).toBe(404);
+  })
 });
 
 describe("PATCH /users/[username]", function() {
@@ -139,6 +180,14 @@ describe("PATCH /users/[username]", function() {
       .patch("/users/u1")
       .send({ _token: tokens.u2 }); // wrong user!
     expect(response.statusCode).toBe(401);
+  });
+  
+  // TEST BUG #6
+  test("should patch data if right user", async function() {
+    const response = await request(app)
+      .patch("/users/u1")
+      .send({ _token: tokens.u1 }); 
+    expect(response.statusCode).not.toBe(401);
   });
 
   test("should patch data if admin", async function() {
@@ -155,8 +204,10 @@ describe("PATCH /users/[username]", function() {
       admin: false,
       password: expect.any(String)
     });
-  });
 
+
+  });
+  // TEST BUG #7
   test("should disallowing patching not-allowed-fields", async function() {
     const response = await request(app)
       .patch("/users/u1")

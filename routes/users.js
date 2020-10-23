@@ -16,7 +16,7 @@ const { authUser, requireLogin, requireAdmin } = require('../middleware/auth');
  */
 
 router.get('/', authUser, requireLogin, async function(req, res, next) {
-  try {
+    try {
     let users = await User.getAll();
     return res.json({ users });
   } catch (err) {
@@ -63,7 +63,8 @@ router.get('/:username', authUser, requireLogin, async function(
  *
  */
 
-router.patch('/:username', authUser, requireLogin, requireAdmin, async function(
+  // Fixes BUG #6 by removing requireAdmin middleware
+  router.patch('/:username', authUser, requireLogin, async function(
   req,
   res,
   next
